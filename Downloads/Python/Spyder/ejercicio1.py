@@ -1,10 +1,9 @@
 #Este tutorial demuestra el uso de FloPy para desarrollar un modelo simple MODFLOW 6.
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import flopy
-
+#datos
 name = "ejercicio1"
 h1 = 100
 h2 = 90
@@ -16,10 +15,9 @@ k = 1.0
 
 #Crear los objetos del modelo Flopy
 sim = flopy.mf6.MFSimulation(
-    sim_name=name, exe_name="mf6", version="C:\Users\angie\Downloads\Python\mf6.2.0\bin/mf6", sim_ws="Workspace"
+    sim_name=name, exe_name="C:/Users/angie/Downloads/Python/mf6.2.0/bin/mf6", version="mf6", sim_ws="Workspace"
 )
-
-#Create the Flopy TDIS object
+#Crear los objetos del modelo Flopy TDIS
 tdis = flopy.mf6.ModflowTdis(
     sim, pname="tdis", time_units="DAYS", nper=1, perioddata=[(1.0, 1, 1.0)]
 )
@@ -50,11 +48,14 @@ start = h1 * np.ones((Nlay, N, N))
 ic = flopy.mf6.ModflowGwfic(gwf, pname="ic", strt=start)
 
 #Cree el paquete de flujo de propiedades de nodo (NPF)
-npf = flopy.mf6.ModflowGwfnpf(gwf, icelltype=1, k=k, save_flows=True)
+k=np.ones([10,N,N])
+k[1,:,:]=5e-1
+npf = flopy.mf6.ModflowGwfnpf(gwf, icelltype=1, k=k, save_flows=True, save_specific_discharge = True)
 
-#Cree el paquete de cabezal constante (CHD)
+#Cree el paquete de cabeza constante (CHD)
 chd_rec = []
 chd_rec.append(((0, int(N / 4), int(N / 4)), h2))
+chd_rec.append(((1, int(3*N / 4), int(3*N / 4)), h2-5))
 for layer in range(0, Nlay):
     for row_col in range(0, N):
         chd_rec.append(((layer, row_col, 0), h1))
@@ -69,11 +70,12 @@ chd = flopy.mf6.ModflowGwfchd(
     save_flows=True,
 )
 
+
 iper = 0
 ra = chd.stress_period_data.get_data(key=iper)
 ra
 
-# Create the output control (`OC`) Package
+# Create the output control (`OC`) Package impresion
 headfile = "{}.hds".format(name)
 head_filerecord = [headfile]
 budgetfile = "{}.cbb".format(name)
@@ -96,8 +98,10 @@ success, buff = sim.run_simulation()
 if not success:
     raise Exception("MODFLOW 6 did not terminate normally.")
     
+    
 #Resultados del head posterior al proceso
 #Graficar un mapa de la capa 1
+headfile='Workspace' +'/'+headfile
 hds = flopy.utils.binaryfile.HeadFile(headfile)
 h = hds.get_data(kstpkper=(0, 0))
 x = y = np.linspace(0, L, N)
@@ -122,16 +126,31 @@ ax = fig.add_subplot(1, 1, 1, aspect="auto")
 c = ax.contour(x, z, h[:, 50, :], np.arange(90, 100.1, 0.2), colors="black")
 plt.clabel(c, fmt="%1.1f")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Trazar un mapa de las capas 1 y 10
+ibd = np.ones((Nlay, N, N), dtype=np.int)
+for k, i, j in ra["cellid"]:
+    ibd[k, i, j] = -1
+    
+fig, axes = plt.subplots(2, 1, figsize=(6, 12), constrained_layout=True)
+# first subplot
+ax = axes[0]
+ax.set_title("Model Layer 1")
+modelmap = flopy.plot.PlotMapView(model=gwf, ax=ax)
+quadmesh = modelmap.plot_ibound(ibound=ibd)
+linecollection = modelmap.plot_grid(lw=0.5, color="0.6")
+contours = modelmap.contour_array(
+    h[0], levels=np.arange(90, 100.1, 0.2), colors="green"
+)
+ax.clabel(contours, fmt="%2.1f")
+# second subplot
+ax = axes[1]
+ax.set_title("Model Layer {}".format(Nlay))
+modelmap = flopy.plot.PlotMapView(model=gwf, ax=ax, layer=Nlay - 1)
+quadmesh = modelmap.plot_ibound(ibound=ibd)
+linecollection = modelmap.plot_grid(lw=0.5, color="0.5")
+pa = modelmap.plot_array(h[0])
+contours = modelmap.contour_array(
+    h[0], levels=np.arange(90, 100.1, 0.2), colors="black"
+)
+cb = plt.colorbar(pa, shrink=0.5, ax=ax)
+ax.clabel(contours, fmt="%2.1f")
