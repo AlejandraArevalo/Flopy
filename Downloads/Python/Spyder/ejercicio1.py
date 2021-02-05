@@ -154,3 +154,23 @@ contours = modelmap.contour_array(
 )
 cb = plt.colorbar(pa, shrink=0.5, ax=ax)
 ax.clabel(contours, fmt="%2.1f")
+
+#prueba de grafico de flechas a la de dios
+cbc_file = os.path.join('Workspace', "ejercicio1.cbb")
+cbc = flopy.utils.CellBudgetFile(cbc_file, precision='double')
+spdis = cbc.get_data(text="SPDIS")
+
+head_file = os.path.join('Workspace', "ejercicio1.hds")
+head = flopy.utils.HeadFile(head_file)
+hdata = head.get_alldata()[0]
+
+fig = plt.figure(figsize=(8, 8))
+
+mapview = flopy.plot.PlotMapView(model=gwf, layer=0)
+linecollection = mapview.plot_grid()
+quadmesh = mapview.plot_array(a=hdata, alpha=0.5, masked_values=[1e30])
+quiver = mapview.plot_specific_discharge(spdis[0])
+#inactive = mapview.plot_inactive()
+
+plt.title("Specific Discharge (" + r'$L/T$' + ')')
+plt.colorbar(quadmesh, shrink=0.75);
