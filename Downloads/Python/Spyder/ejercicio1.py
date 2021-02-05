@@ -22,7 +22,7 @@ k = 1.0
 
 #Crear los objetos del modelo Flopy
 sim = flopy.mf6.MFSimulation(
-    sim_name=name, exe_name="C:/Users/angie/Downloads/Python/mf6.2.0/bin/mf6", version="mf6", sim_ws="Workspace"
+    sim_name=name, exe_name="D:/Semestre 2020-2/CURSO DE DIPLOMADO/mf6.2.0/bin/mf6" , version="mf6", sim_ws="Workspace"
 )
 #Crear los objetos del modelo Flopy TDIS
 tdis = flopy.mf6.ModflowTdis(
@@ -85,21 +85,6 @@ drn= flopy.mf6.ModflowGwfdrn(gwf,
                              stress_period_data=drn_datos
 )
 
-#condicionn de draneje en la primer capa 
-drn_datos = []
-for column in range(51):
-        drn_datos.append(((0, 51, column), 78.5+0.2*column, 0.3))
-drn= flopy.mf6.ModflowGwfdrn(gwf,
-                             stress_period_data=drn_datos
-)
-
-#condicionn de draneje en la primer capa 
-drn_datos = []
-for column in range(51):
-        drn_datos.append(((0, 51, column), 78.5+0.2*column, 0.3))
-drn= flopy.mf6.ModflowGwfdrn(gwf,
-                             stress_period_data=drn_datos
-)
 
 iper = 0
 ra = chd.stress_period_data.get_data(key=iper)
